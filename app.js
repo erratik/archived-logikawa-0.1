@@ -23,7 +23,7 @@ if (environment === 'development') {
     env(__dirname + '/.env');
 }
 
-app.use('/public', express.static(path.join(__dirname, '../public')))
+app.use('/public', express.static(path.join(__dirname, './public')))
 app.set('constants', require('./lib/constants/urls')(datawhoreConfig));
 
 console.log(app.get('constants'));
