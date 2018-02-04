@@ -110,8 +110,6 @@ const DropSchema = {
 		},
 		writeStory: function (params, cb) {
 
-			// const that = this;
-			// const query = params.space === 'all' ? {} ;
 			let fromTs, toTs;
 			if (!!params.from && !!params.to) {
 				fromTs = Number(moment(params.from, 'YYYYMMDD').startOf().format('x'));
@@ -121,71 +119,14 @@ const DropSchema = {
 				toTs = Number(moment(params.day, 'YYYYMMDD').endOf('day').format('x')) || Number(moment().endOf('day').format('x'));
 			}
 
-
-			// this.findOne({ 'drops.type': 'rain.storyline' }, function (err, docs) {
-			// 	if (err) cb(err);
-				
-			// 	const stories = docs.drops.filter(story => story.type === 'rain.storyline' && story.timestamp === timestamp).map(story => {
-			// 		let segments = story.content.segments;
-			// 		if (!!segments) {
-			// 		segments = segments.map(segment => {
-			// 			segment.activities = segment.activities.map(activity => {
-							
-			// 				const start = Number(moment(activity.startTime).format('x'));
-			// 				const end = Number(moment(activity.endTime).format('x'));
-			// 				const drops = docs.drops.filter(d => d.space !== 'moves' && d.timestamp > start && d.timestamp < end);
-			// 				return activity;
-			// 			});
-
-			// 			return segment;
-			// 		});
-			// 	}
-			// 		return story;
-			// 	});
-				
-				
-			//     cb(stories);
-			// });
 			this.aggregate(
-
-				// Pipeline
 				[
-					// Stage 1
 					{ $unwind: "$drops" },
-			
-					// Stage 2
-					{
-						$group: {
-							"_id": "$drops.space",
-							"drops": {$push: "$drops"}
-						}
-					},
-			
-					// Stage 3
+					{ $group: { "_id": "$drops.space", "drops": {$push: "$drops"} } },
 					{ $unwind: "$drops" },
-			
-					// Stage 4
-					{
-						$match: {
-							"drops.timestamp" : {
-								$gte: fromTs,
-								$lt: toTs
-							}
-						}
-					},
-			
-					// Stage 5
-					{
-						$group: {
-							"_id": "$drops.space",
-							"drops": {$push: "$drops"}
-						}
-					},
-			
-					// Stage 6
+					{ $match: { "drops.timestamp" : { $gte: fromTs, $lt: toTs } } },
+					{ $group: { "_id": "$drops.space", "drops": {$push: "$drops"} } },
 					{ $unwind: "$drops" },
-			
-					// Stage 7
 					{
 						$project: {
 							_id: "$drops.content.date",
@@ -193,24 +134,13 @@ const DropSchema = {
 							drops: "$drops"
 						}
 					},
-			
-					// Stage 8
-					{
-						$group: {
-							"_id": "$_id",
-							"items": {$push: "$drops"}
-						}
-					},
-			
+					{ $group: { "_id": "$drops.space", "items": {$push: "$drops"} } },
 				]
-			
 			).exec((err, docs) => {
 				if (err) cb(err);
 
-				// get drops
 				const drops = docs.filter(o => !o._id)[0];
 
-				// get storyline
 				const [stories] = docs.filter(o => !!o._id).map(story => story.items.filter(item => item.type === 'rain.storyline')).map(story => {
 					let segments = story[0].content.segments;
 					if (!!segments) {
@@ -239,15 +169,12 @@ const DropSchema = {
 							segment.startTime = Number(moment(segment.startTime).format('x'));
 							segment.endTime = Number(moment(segment.endTime).format('x'));
 							segment.drops = drops.items.length ? drops.items : null;
-							
+
 							return segment;
 						});
 					}
 					return story;
 				});
-
-				// map activity drops
-// debugger;
 
 				cb(stories);
 			});
