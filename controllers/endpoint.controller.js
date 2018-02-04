@@ -142,6 +142,14 @@ module.exports = {
                 cb(drops);
             });
         },
+        writeStory: function (options, cb) {
+            Drop.writeStory(options, function (drops) {
+                // drops = drops.map(drop => {
+                //     JSON.parse(drop.content)
+                // });
+                cb(drops);
+            });
+        },
         delete: function (space, dropIds, type, cb, options) {
             Drop.removeDrops(space, dropIds, function (data) {
                 cb(data);

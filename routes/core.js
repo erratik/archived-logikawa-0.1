@@ -14,6 +14,7 @@ const NamespaceController = require('../controllers/namespace.controller');
 const EndpointController = require('../controllers/endpoint.controller');
 const SpaceController = EndpointController.space;
 const RainController = EndpointController.rain;
+const DropController = EndpointController.drops;
 const EndpointService = require('../services/endpoint.service');
 const postEndpoint = EndpointService.post;
 const getEndpoint = EndpointService.get;
@@ -67,6 +68,11 @@ router
     .get('/get/rain', (req, res) => {
         RainController.getAll(req.query, rain => {
             res.status(200).send(rain);
+        });
+    })
+    .get('/get/story', (req, res) => {
+        DropController.writeStory(req.query, story => {
+            res.status(200).send(story);
         });
     });
 

@@ -49,3 +49,7 @@ testem.log
 Thumbs.db
 npm-debug.*
 .history
+
+
+# secrets
+.env
