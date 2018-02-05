@@ -113,12 +113,12 @@ module.exports = NamespaceController = {
                 const err = body.includes('html') ? {
                     status: 401
                 } : errorObj;
-
                 const hasExpiredToken = expiredTokenMsg.includes(errorObj.error);
+                console.log('has expired token? '+ hasExpiredToken)
                 
                 if (!!errorObj.error || err.status === 401) {
 
-                    console.log('⛔ [namespace ctrl: request]', errorObj.error);
+                    console.log('⛔ [namespace ctrl: request]', data.space, errorObj.error);
                     // if (data.space === 'spotify') {
                     //     debugger;
                     // }
