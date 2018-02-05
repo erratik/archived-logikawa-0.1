@@ -142,6 +142,12 @@ module.exports = {
                 cb(drops);
             });
         },
+        writeStory: function (options, cb) {
+            // TODO: validate timestamps 
+            Drop.writeStory(options, function (drops) {
+                cb(drops);
+            });
+        },
         delete: function (space, dropIds, type, cb, options) {
             Drop.removeDrops(space, dropIds, function (data) {
                 cb(data);
