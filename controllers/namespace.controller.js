@@ -134,25 +134,29 @@ module.exports = NamespaceController = {
                                 try {
                                     // `refreshToken` may or may not exist, depending on the strategy you are using.
                                     
-                                    console.log(accessToken, refreshToken);
-                                    refreshToken = refreshToken ? refreshToken : data.refreshToken;
-                                    const keys = {
-                                        accessToken,
-                                        refreshToken
-                                    };
-                                    settings.extras = Object.keys(keys).map(key => {
-                                        return {
-                                            'type': 'oauth',
-                                            'value': keys[key],
-                                            'label': key
+                                    if (!!accessToken) {
+                                        console.log(accessToken, refreshToken);
+
+                                        refreshToken = refreshToken ? refreshToken : data.refreshToken;
+                                        const keys = {
+                                            accessToken,
+                                            refreshToken
                                         };
-                                    });
-                                    settings.connected = true;
-                                    console.log('token refreshed');
-                                    Setting.updateSettings(settings, EndpointService.post(data, body, cb));
+                                        settings.extras = Object.keys(keys).map(key => {
+                                            return {
+                                                'type': 'oauth',
+                                                'value': keys[key],
+                                                'label': key
+                                            };
+                                        });
+                                        settings.connected = true;
+                                        console.log('token refreshed');
+                                        Setting.updateSettings(settings, EndpointService.post(data, body, cb));
+                                    }
                                 
                                 } catch (_e) {
-                                    console.log(error);
+                                    console.log(_e);
+                                    EndpointService.post(data, body, cb);
                                 }
                             });
                         });
