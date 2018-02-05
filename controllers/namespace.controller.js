@@ -104,18 +104,20 @@ module.exports = NamespaceController = {
             if (body) {
 
                 const expiredTokenMsg = ['expired', 'expired_access_token'];
-                
+
                 let errorObj = typeof body === 'string' && !expiredTokenMsg.includes(body) ? JSON.parse(body) : {
                     status: 401
                 };
-                errorObj = expiredTokenMsg.includes(body) ? { error: body }: errorObj;
-                    
+                errorObj = expiredTokenMsg.includes(body) ? {
+                    error: body
+                } : errorObj;
+
                 const err = body.includes('html') ? {
                     status: 401
                 } : errorObj;
                 const hasExpiredToken = expiredTokenMsg.includes(errorObj.error);
-                console.log('has expired token? '+ hasExpiredToken);
-                
+                console.log('has expired token? ' + hasExpiredToken);
+
                 if (!!errorObj.error || err.status === 401) {
 
                     console.log('⛔ [namespace ctrl: request]', data.space, errorObj.error);
@@ -128,11 +130,11 @@ module.exports = NamespaceController = {
                         Setting.findSettings(data.space, (settings) => {
                             console.log('⛔ [finding settings]');
                             refresh.requestNewAccessToken(data.space, data.refreshToken, (_e, accessToken, refreshToken) => {
-                                console.log('⛔ [requested new token updating settings]');
-                                console.log(_e, accessToken, refreshToken);
-                                
-                                // `refreshToken` may or may not exist, depending on the strategy you are using.
-                                if (!_e) {
+                                console.log('[requested new token updating settings]');
+                                try {
+                                    // `refreshToken` may or may not exist, depending on the strategy you are using.
+                                    
+                                    console.log(accessToken, refreshToken);
                                     refreshToken = refreshToken ? refreshToken : data.refreshToken;
                                     const keys = {
                                         accessToken,
@@ -148,6 +150,9 @@ module.exports = NamespaceController = {
                                     settings.connected = true;
                                     console.log('token refreshed');
                                     Setting.updateSettings(settings, EndpointService.post(data, body, cb));
+                                
+                                } catch (_e) {
+                                    console.log(error);
                                 }
                             });
                         });
