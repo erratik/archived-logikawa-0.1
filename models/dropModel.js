@@ -1,6 +1,4 @@
 const mongoose = require('mongoose');
-require('mongoose-long')(mongoose);
-var Long = mongoose.Schema.Types.Long;
 const ObjectId = require('mongodb').ObjectId;
 var _ = require('lodash');
 var moment = require('moment');
