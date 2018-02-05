@@ -108,7 +108,7 @@ module.exports = NamespaceController = {
                 let errorObj = typeof body === 'string' && !expiredTokenMsg.includes(body) ? JSON.parse(body) : {
                     status: 401
                 };
-                errorObj = !expiredTokenMsg.includes(body) ? { error: body }: errorObj;
+                errorObj = expiredTokenMsg.includes(body) ? { error: body }: errorObj;
                     
                 const err = body.includes('html') ? {
                     status: 401
