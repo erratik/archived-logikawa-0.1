@@ -114,7 +114,7 @@ module.exports = NamespaceController = {
                     status: 401
                 } : errorObj;
 
-                const hasExpiredToken = !!expiredTokenMsg.includes(errorObj.error);
+                const hasExpiredToken = expiredTokenMsg.includes(errorObj.error);
                 
                 if (!!errorObj.error || err.status === 401) {
 
