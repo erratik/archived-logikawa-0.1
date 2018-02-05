@@ -3,6 +3,7 @@ var Space = require('./spaceModel');
 
 const environment = process.env.HOME === '/Users/erratik' ? 'development' : 'production';
 const datawhoreConfig = require('../datawhore-config')(environment);
+console.log(environment);
 const API_URL = require('../lib/constants/urls')(datawhoreConfig).DATAWHORE[environment].API_URL;
 
 var SettingSchema = {
