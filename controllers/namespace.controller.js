@@ -114,14 +114,14 @@ module.exports = NamespaceController = {
                     status: 401
                 } : errorObj;
                 const hasExpiredToken = expiredTokenMsg.includes(errorObj.error);
-                console.log('has expired token? '+ hasExpiredToken)
+                console.log('has expired token? '+ hasExpiredToken);
                 
                 if (!!errorObj.error || err.status === 401) {
 
                     console.log('⛔ [namespace ctrl: request]', data.space, errorObj.error);
-                    // if (data.space === 'spotify') {
-                    //     debugger;
-                    // }
+                    if (data.space === 'dribbble') {
+                        console.log(body);
+                    }
                     if (hasExpiredToken) {
 
                         Setting.findSettings(data.space, (settings) => {
@@ -142,6 +142,7 @@ module.exports = NamespaceController = {
                                         };
                                     });
                                     settings.connected = true;
+                                    console.log('token refreshed');
                                     Setting.updateSettings(settings, EndpointService.post(data, body, cb));
                                 }
                             });
