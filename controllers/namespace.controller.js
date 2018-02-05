@@ -104,43 +104,58 @@ module.exports = NamespaceController = {
             if (body) {
 
                 const expiredTokenMsg = ['expired', 'expired_access_token'];
-                const hasExpiredToken = str => expiredTokenMsg.filter(msg => str.includes(msg));
-                console.log(body);
-                const errorObj = typeof body === 'string' && !expiredTokenMsg.includes(body) ? JSON.parse(body) : {
+
+                let errorObj = typeof body === 'string' && !expiredTokenMsg.includes(body) ? JSON.parse(body) : {
                     status: 401
                 };
+                errorObj = expiredTokenMsg.includes(body) ? {
+                    error: body
+                } : errorObj;
+
                 const err = body.includes('html') ? {
                     status: 401
                 } : errorObj;
+                const hasExpiredToken = expiredTokenMsg.includes(errorObj.error);
+                console.log('has expired token? ' + hasExpiredToken);
 
                 if (!!errorObj.error || err.status === 401) {
 
-                    console.log('⛔ [namespace ctrl: request]', errorObj.error);
-                    // if (data.space === 'spotify') {
-                    //     debugger;
-                    // }
-                    if (hasExpiredToken(body).length) {
+                    console.log('⛔ [namespace ctrl: request]', data.space, errorObj.error);
+                    if (data.space === 'dribbble') {
+                        console.log(typeof body);
+                    }
+                    if (hasExpiredToken) {
+                        console.log('⛔ [namespace ctrl: request]', data.space, errorObj.error);
 
                         Setting.findSettings(data.space, (settings) => {
+                            console.log('🔍 [finding settings]');
                             refresh.requestNewAccessToken(data.space, data.refreshToken, (_e, accessToken, refreshToken) => {
+                                console.log('⌛ [requested new token]');
+                                
+                                    if (!!accessToken) {
+                                        console.log(accessToken, refreshToken);
 
-                                // `refreshToken` may or may not exist, depending on the strategy you are using.
-                                if (!_e) {
-                                    refreshToken = refreshToken ? refreshToken : data.refreshToken;
-                                    const keys = {
-                                        accessToken,
-                                        refreshToken
-                                    };
-                                    settings.extras = Object.keys(keys).map(key => {
-                                        return {
-                                            'type': 'oauth',
-                                            'value': keys[key],
-                                            'label': key
+                                        refreshToken = refreshToken ? refreshToken : data.refreshToken;
+                                        const keys = {
+                                            accessToken,
+                                            refreshToken
                                         };
-                                    });
-                                    settings.connected = true;
-                                    Setting.updateSettings(settings, EndpointService.post(data, body, cb));
-                                }
+                                        settings.extras = Object.keys(keys).map(key => {
+                                            return {
+                                                'type': 'oauth',
+                                                'value': keys[key],
+                                                'label': key
+                                            };
+                                        });
+                                        settings.connected = true;
+                                        console.log('✅ [token refreshed]');
+                                        Setting.updateSettings(settings, EndpointService.post(data, body, cb));
+                                    } else {
+
+                                console.log(_e);
+                                console.log('❗ [nothing to update]');
+                                    }
+                                
                             });
                         });
                     } else {
