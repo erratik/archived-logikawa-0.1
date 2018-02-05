@@ -128,9 +128,9 @@ module.exports = NamespaceController = {
                         console.log('⛔ [namespace ctrl: request]', data.space, errorObj.error);
 
                         Setting.findSettings(data.space, (settings) => {
-                            console.log('⛔ [finding settings]');
+                            console.log('🔍 [finding settings]');
                             refresh.requestNewAccessToken(data.space, data.refreshToken, (_e, accessToken, refreshToken) => {
-                                console.log('[requested new token updating settings]');
+                                console.log('⌛ [requested new token]');
                                 try {
                                     // `refreshToken` may or may not exist, depending on the strategy you are using.
                                     
@@ -150,13 +150,13 @@ module.exports = NamespaceController = {
                                             };
                                         });
                                         settings.connected = true;
-                                        console.log('token refreshed');
+                                        console.log('✅ [token refreshed]');
                                         Setting.updateSettings(settings, EndpointService.post(data, body, cb));
                                     }
                                 
                                 } catch (_e) {
                                     console.log(_e);
-                                    EndpointService.post(data, body, cb);
+                                    console.log('❗ [nothing to update]');
                                 }
                             });
                         });
