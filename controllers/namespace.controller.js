@@ -126,7 +126,9 @@ module.exports = NamespaceController = {
                         console.log('⛔ [namespace ctrl: request]', data.space, errorObj.error);
 
                         Setting.findSettings(data.space, (settings) => {
+                            console.log('⛔ [finding settings]');
                             refresh.requestNewAccessToken(data.space, data.refreshToken, (_e, accessToken, refreshToken) => {
+                                console.log('⛔ [requested new token updating settings]');
 
                                 // `refreshToken` may or may not exist, depending on the strategy you are using.
                                 if (!_e) {
