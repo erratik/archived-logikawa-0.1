@@ -104,7 +104,6 @@ module.exports = NamespaceController = {
             if (body) {
 
                 const expiredTokenMsg = ['expired', 'expired_access_token'];
-                const hasExpiredToken = str => expiredTokenMsg.filter(msg => str.includes(msg));
                 
                 let errorObj = typeof body === 'string' && !expiredTokenMsg.includes(body) ? JSON.parse(body) : {
                     status: 401
@@ -115,13 +114,15 @@ module.exports = NamespaceController = {
                     status: 401
                 } : errorObj;
 
+                const hasExpiredToken = !!expiredTokenMsg.includes(errorObj.error);
+                
                 if (!!errorObj.error || err.status === 401) {
 
                     console.log('⛔ [namespace ctrl: request]', errorObj.error);
                     // if (data.space === 'spotify') {
                     //     debugger;
                     // }
-                    if (hasExpiredToken(body).length) {
+                    if (hasExpiredToken) {
 
                         Setting.findSettings(data.space, (settings) => {
                             refresh.requestNewAccessToken(data.space, data.refreshToken, (_e, accessToken, refreshToken) => {
