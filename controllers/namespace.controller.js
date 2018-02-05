@@ -100,56 +100,63 @@ module.exports = NamespaceController = {
     requestDataWithToken: (data, options, cb) => request(options, (error, response, body) => {
 
         try {
-            
-        if (body) {
 
-            const expiredTokenMsg = ['expired'];
-            const hasExpiredToken = str => expiredTokenMsg.filter(msg => str.includes(msg));
-            console.log(body);
-            const errorObj = typeof body === 'string' && !expiredTokenMsg.includes(body) ? JSON.parse(body) : { status: 401 };
-            const err = body.includes('html') ? { status: 401 } : errorObj;
+            if (body) {
 
-            if (!!errorObj.error || err.status === 401) {
+                const expiredTokenMsg = ['expired', 'expired_access_token'];
+                const hasExpiredToken = str => expiredTokenMsg.filter(msg => str.includes(msg));
+                console.log(body);
+                const errorObj = typeof body === 'string' && !expiredTokenMsg.includes(body) ? JSON.parse(body) : {
+                    status: 401
+                };
+                const err = body.includes('html') ? {
+                    status: 401
+                } : errorObj;
 
-                console.log('⛔ [namespace ctrl: request]', errorObj.error);
-                // if (data.space === 'spotify') {
-                //     debugger;
-                // }
-                if (hasExpiredToken(body).length) {
+                if (!!errorObj.error || err.status === 401) {
 
-                    Setting.findSettings(data.space, (settings) => {
-                        refresh.requestNewAccessToken(data.space, data.refreshToken, (_e, accessToken, refreshToken) => {
+                    console.log('⛔ [namespace ctrl: request]', errorObj.error);
+                    // if (data.space === 'spotify') {
+                    //     debugger;
+                    // }
+                    if (hasExpiredToken(body).length) {
 
-                            // `refreshToken` may or may not exist, depending on the strategy you are using.
-                            if (!_e) {
-                                refreshToken = refreshToken ? refreshToken : data.refreshToken;
-                                const keys = { accessToken, refreshToken };
-                                settings.extras = Object.keys(keys).map(key => {
-                                    return {
-                                        'type': 'oauth',
-                                        'value': keys[key],
-                                        'label': key
+                        Setting.findSettings(data.space, (settings) => {
+                            refresh.requestNewAccessToken(data.space, data.refreshToken, (_e, accessToken, refreshToken) => {
+
+                                // `refreshToken` may or may not exist, depending on the strategy you are using.
+                                if (!_e) {
+                                    refreshToken = refreshToken ? refreshToken : data.refreshToken;
+                                    const keys = {
+                                        accessToken,
+                                        refreshToken
                                     };
-                                });
-                                settings.connected = true;
-                                Setting.updateSettings(settings, EndpointService.post(data, body, cb));
-                            }
+                                    settings.extras = Object.keys(keys).map(key => {
+                                        return {
+                                            'type': 'oauth',
+                                            'value': keys[key],
+                                            'label': key
+                                        };
+                                    });
+                                    settings.connected = true;
+                                    Setting.updateSettings(settings, EndpointService.post(data, body, cb));
+                                }
+                            });
                         });
-                    });
+                    } else {
+                        cb();
+                    }
+
                 } else {
-                    cb();
+
+                    EndpointService.post(data, body, cb);
                 }
 
-            } else {
 
-                EndpointService.post(data, body, cb);
             }
-
-
+        } catch (error) {
+            console.log(error)
         }
-            } catch (error) {
-                console.log(error)
-            }
     }),
     endpointSpaceCall: (data, req, res, cb = null) => {
         // let extras;
