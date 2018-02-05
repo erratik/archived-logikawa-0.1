@@ -5,6 +5,8 @@ const ObjectId = require('mongodb').ObjectId;
 var _ = require('lodash');
 var moment = require('moment');
 const FetchingService = require('../services/fetch-params.service');
+const Rain = require('./rainModel');
+const DropService = require('../services/drop.service');
 
 const dropSchema = new mongoose.Schema({
 	type: String,
@@ -188,9 +190,7 @@ const DropSchema = {
 		writeStory: function (params, cb) {
 
 			let fromTs, toTs;
-			params = {
-				day: '20180203'
-			};
+
 			if (!!params.from && !!params.to) {
 				fromTs = Number(moment(params.from, 'YYYYMMDD').startOf().format('x'));
 				toTs = Number(moment(params.to, 'YYYYMMDD').endOf().format('x'));
@@ -201,32 +201,33 @@ const DropSchema = {
 
 			this.aggregate(
 				[
-
-					// Stage 1
+					{
+						$match: {}
+					},
+					{
+						$project: {
+							"_id": "$space",
+							"drops": "$drops"
+						}
+					},
 					{
 						$unwind: {
 							path: "$drops"
 						}
 					},
-
-					// Stage 2
 					{
 						$group: {
-							"_id": "$drops.space",
+							"_id": "$_id",
 							"drops": {
 								$push: "$drops"
 							}
 						}
 					},
-
-					// Stage 3
 					{
 						$unwind: {
 							path: "$drops"
 						}
 					},
-
-					// Stage 4
 					{
 						$match: {
 							"drops.timestamp": {
@@ -235,34 +236,50 @@ const DropSchema = {
 							}
 						}
 					},
-
-					// Stage 5
 					{
 						$group: {
-							"_id": "$drops.space",
+							"_id": "$_id",
 							"drops": {
 								$push: "$drops"
 							}
 						}
 					},
-
-					// Stage 6
 					{
 						$unwind: {
 							path: "$drops"
 						}
 					},
-
-					// Stage 7
 					{
 						$project: {
-							_id: "$drops.content.date",
-							space: "$drops.space",
-							drops: "$drops"
+							_id: "$_id",
+							drop: {
+								timestamp: "$drops.timestamp",
+								content: "$drops.content",
+								type: "$drops.type",
+								space: "$_id",
+								drop_id: "$drops._id"
+							}
 						}
 					},
-
-					// Stage 8
+					{
+						$group: {
+							"_id": "$_id",
+							"items": {
+								$push: "$drop"
+							}
+						}
+					},
+					{
+						$unwind: {
+							path: "$items"
+						}
+					},
+					{
+						$project: {
+							_id: "$items.content.date",
+							drops: "$items"
+						}
+					},
 					{
 						$group: {
 							"_id": "$_id",
@@ -270,54 +287,75 @@ const DropSchema = {
 								$push: "$drops"
 							}
 						}
-					}
-
+					},
 
 				]
 			).exec((err, docs) => {
 				if (err) cb(err);
-
+				if (!docs.length) {
+					cb({'err': `no story or items found on ${moment(fromTs).format('YYYYMMDD')}`});
+				}
+				
 				const drops = docs.filter(o => !o._id)[0];
 
-				const [stories] = docs.filter(o => !!o._id).map(story => story.items.filter(item => item.type === 'rain.storyline')).map(story => {
-					let segments = story[0].content.segments;
-					if (!!segments) {
-						segments = segments.map(segment => {
-							segment.activities = segment.activities.map(activity => {
+				const spaces = [...new Set(drops.items.map(drop => drop.space))];
 
-								activity.startTime = Number(moment(activity.startTime).format('x'));
-								activity.endTime = Number(moment(activity.endTime).format('x'));
-								activity.drops = !!drops.items ? drops.items.filter(d => {
-									const isActivityDrop = d.timestamp > activity.startTime && d.timestamp < activity.endTime;
-									if (isActivityDrop) {
-										drops.items = drops.items.filter(_d => _d.timestamp !== d.timestamp);
-									}
-									return isActivityDrop;
-								}) : null;
-								if (activity.trackPoints.length) {
-									activity.trackPoints = activity.trackPoints.map(p => {
-										p.time = Number(moment(p.time).format('x'));
-										return p;
+				Rain.findAllRain({
+					spaces
+				}, (rain) => {
+
+					const dimensions = {};
+					rain.forEach(rainModel => {
+						dimensions[rainModel.space] = rainModel.dimensions;
+					});
+
+					drops.items = drops.items.map(drop => DropService.enrichDrop(drop, dimensions[drop.space].filter(dim => dim.type === drop.type)));
+
+					const [stories] = docs.filter(o => !!o._id).map(story => story.items.filter(item => item.type === 'rain.storyline')).map(story => {
+						let segments = story[0].content.segments;
+						if (!!segments) {
+							segments = segments.map(segment => {
+								if (!!segment.activities) {
+									segment.activities = segment.activities.map(activity => {
+	
+										activity.startTime = activity.timestamp = Number(moment(activity.startTime).format('x'));
+										activity.endTime = Number(moment(activity.endTime).format('x'));
+										activity.drops = !!drops.items ? drops.items.filter((d, i) => {
+											const isActivityDrop = d.timestamp > activity.startTime && d.timestamp < activity.endTime;
+											if (isActivityDrop) {
+												drops.items.splice(i, 1);
+											}
+											return isActivityDrop;
+										}) : null;
+										if (activity.trackPoints.length) {
+											activity.trackPoints = activity.trackPoints.map(p => {
+												p.time = Number(moment(p.time).format('x'));
+												return p;
+											});
+										}
+										return activity;
+	
 									});
 								}
-								return activity;
 
+								segment.startTime = segment.timestamp = Number(moment(segment.startTime).format('x'));
+								segment.endTime = Number(moment(segment.endTime).format('x'));
+
+								if (segment.type === 'place') {
+									const placeDrops = drops.items.filter(item => item.timestamp > segment.startTime && item.timestamp < segment.endTime)
+									segment.place.drops = drops.items.length ? drops.items : null;
+								}
+
+								return segment;
 							});
+						}
+						return story;
+					});
 
-							segment.startTime = Number(moment(segment.startTime).format('x'));
-							segment.endTime = Number(moment(segment.endTime).format('x'));
-							segment.drops = drops.items.length ? drops.items : null;
-
-							return segment;
-						});
-					}
-					return story;
+					cb(stories);
 				});
 
-				cb(stories);
 			});
-
-
 		},
 		findAll: function (options, cb) {
 
@@ -401,6 +439,8 @@ const DropSchema = {
 			var that = this;
 
 			let dateFormat = null;
+
+			// TODO: move this to constants
 			switch (space) {
 				case 'swarm':
 				case 'instagram':

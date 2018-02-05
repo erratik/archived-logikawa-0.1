@@ -143,10 +143,8 @@ module.exports = {
             });
         },
         writeStory: function (options, cb) {
+            // TODO: validate timestamps 
             Drop.writeStory(options, function (drops) {
-                // drops = drops.map(drop => {
-                //     JSON.parse(drop.content)
-                // });
                 cb(drops);
             });
         },
