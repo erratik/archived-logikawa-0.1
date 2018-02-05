@@ -120,7 +120,7 @@ module.exports = NamespaceController = {
 
                     console.log('⛔ [namespace ctrl: request]', data.space, errorObj.error);
                     if (data.space === 'dribbble') {
-                        // console.log(body);
+                        console.log(typeof body);
                     }
                     if (hasExpiredToken) {
                         console.log('⛔ [namespace ctrl: request]', data.space, errorObj.error);
@@ -129,7 +129,8 @@ module.exports = NamespaceController = {
                             console.log('⛔ [finding settings]');
                             refresh.requestNewAccessToken(data.space, data.refreshToken, (_e, accessToken, refreshToken) => {
                                 console.log('⛔ [requested new token updating settings]');
-
+                                console.log(_e, accessToken, refreshToken);
+                                
                                 // `refreshToken` may or may not exist, depending on the strategy you are using.
                                 if (!_e) {
                                     refreshToken = refreshToken ? refreshToken : data.refreshToken;
