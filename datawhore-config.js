@@ -11,7 +11,7 @@ const config = {
     },
     'production': {
         port: {
-          api: null,
+          api: 10010,
           client: 4200
         },
         url: {
