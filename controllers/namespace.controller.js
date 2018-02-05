@@ -120,9 +120,10 @@ module.exports = NamespaceController = {
 
                     console.log('⛔ [namespace ctrl: request]', data.space, errorObj.error);
                     if (data.space === 'dribbble') {
-                        console.log(body);
+                        // console.log(body);
                     }
                     if (hasExpiredToken) {
+                        console.log('⛔ [namespace ctrl: request]', data.space, errorObj.error);
 
                         Setting.findSettings(data.space, (settings) => {
                             refresh.requestNewAccessToken(data.space, data.refreshToken, (_e, accessToken, refreshToken) => {
