@@ -105,10 +105,12 @@ module.exports = NamespaceController = {
 
                 const expiredTokenMsg = ['expired', 'expired_access_token'];
                 const hasExpiredToken = str => expiredTokenMsg.filter(msg => str.includes(msg));
-                console.log(body);
-                const errorObj = typeof body === 'string' && !expiredTokenMsg.includes(body) ? JSON.parse(body) : {
+                
+                let errorObj = typeof body === 'string' && !expiredTokenMsg.includes(body) ? JSON.parse(body) : {
                     status: 401
                 };
+                errorObj = !expiredTokenMsg.includes(body) ? { error: body }: errorObj;
+                    
                 const err = body.includes('html') ? {
                     status: 401
                 } : errorObj;
