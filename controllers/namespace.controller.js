@@ -115,7 +115,7 @@ module.exports = NamespaceController = {
                 const err = body.includes('html') ? {
                     status: 401
                 } : errorObj;
-                const hasExpiredToken = expiredTokenMsg.includes(errorObj.error);
+                const hasExpiredToken = expiredTokenMsg.includes(errorObj.error) || (!!errorObj.error && errorObj.error.message.indexOf(expiredTokenMsg[0]) !== -1);
                 console.log('has expired token? ' + hasExpiredToken);
 
                 if (!!errorObj.error || err.status === 401) {
@@ -125,7 +125,7 @@ module.exports = NamespaceController = {
                         console.log(typeof body);
                     }
                     if (hasExpiredToken) {
-                        console.log('⛔ [namespace ctrl: request]', data.space, errorObj.error);
+                        console.log('⛔ ⛔ [namespace ctrl: request]', data.space, errorObj.error);
 
                         Setting.findSettings(data.space, (settings) => {
                             console.log('🔍 [finding settings]');
@@ -170,7 +170,7 @@ module.exports = NamespaceController = {
 
             }
         } catch (error) {
-            console.log(error)
+            console.log(error);
         }
     }),
     endpointSpaceCall: (data, req, res, cb = null) => {

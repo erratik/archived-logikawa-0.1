@@ -296,7 +296,7 @@ const DropSchema = {
 				
 				let [drops] = docs.filter(o => !o._id);
 				const spaces = !!drops ? [...new Set(drops.items.map(drop => drop.space))] : null;
-
+				
 				Rain.findAllRain({
 					spaces
 				}, (rain) => {
@@ -304,16 +304,18 @@ const DropSchema = {
 					const dimensions = {};
 					let msg = '';
 					let stats;
+					let status;
 					let stories;
 
 					rain.forEach(rainModel => {
 						dimensions[rainModel.space] = rainModel.dimensions;
 					});
 
-					if (typeof drops.items === 'undefined') {
-						msg = `no move data found on ${moment(fromTs).format('YYYYMMDD')}`;
+					if (!drops) {
+						msg = `no data found on ${moment(fromTs).format('YYYYMMDD')}`;
+						status = 'danger';
 						stories = null;
-					} else {
+					} else if (!!drops.items.length) {
 						
 						drops.items = drops.items.map(drop => DropService.enrichDrop(drop, dimensions[drop.space].filter(dim => dim.type === drop.type)));
 	
@@ -321,6 +323,7 @@ const DropSchema = {
 	
 						if (stories.length) {
 							msg = `storyline found on ${moment(fromTs).format('YYYYMMDD')}`;
+							status = 'success';
 							stories = stories.map(story => {
 								
 								let segments = story.content.segments;
@@ -365,21 +368,25 @@ const DropSchema = {
 							
 							if (!stories[0].content.summary) {
 								msg += `, but is still in progress (incomplete)`;
+								status = 'warning';
 								stories = drops.items;
 							}
 							
 						} else {
 							msg = `no storylines found on ${moment(fromTs).format('YYYYMMDD')}`;
+							status = 'warning';
 							stories = drops.items;
 						}
+
 					}
 
+					// MAKE STATS
 					stats = spaces.map(s => {
 						const dropCnt = drops.items.filter(d => d.space === s);
 						return {space: s, count: dropCnt.length};
 					});
 
-					cb({msg, stats, items: stories});
+					cb({msg, status, stats, items: stories});
 
 				});
 
