@@ -294,63 +294,93 @@ const DropSchema = {
 					cb({'err': `no story or items found on ${moment(fromTs).format('YYYYMMDD')}`});
 				}
 				
-				const drops = docs.filter(o => !o._id)[0];
-
-				const spaces = [...new Set(drops.items.map(drop => drop.space))];
+				let [drops] = docs.filter(o => !o._id);
+				const spaces = !!drops ? [...new Set(drops.items.map(drop => drop.space))] : null;
 
 				Rain.findAllRain({
 					spaces
 				}, (rain) => {
 
 					const dimensions = {};
+					let msg = '';
+					let stats;
+					let stories;
+
 					rain.forEach(rainModel => {
 						dimensions[rainModel.space] = rainModel.dimensions;
 					});
 
-					drops.items = drops.items.map(drop => DropService.enrichDrop(drop, dimensions[drop.space].filter(dim => dim.type === drop.type)));
-
-					const [stories] = docs.filter(o => !!o._id).map(story => story.items.filter(item => item.type === 'rain.storyline')).map(story => {
-						let segments = story[0].content.segments;
-						if (!!segments) {
-							segments = segments.map(segment => {
-								if (!!segment.activities) {
-									segment.activities = segment.activities.map(activity => {
+					if (typeof drops.items === 'undefined') {
+						msg = `no move data found on ${moment(fromTs).format('YYYYMMDD')}`;
+						stories = null;
+					} else {
+						
+						drops.items = drops.items.map(drop => DropService.enrichDrop(drop, dimensions[drop.space].filter(dim => dim.type === drop.type)));
 	
-										activity.startTime = activity.timestamp = Number(moment(activity.startTime).format('x'));
-										activity.endTime = Number(moment(activity.endTime).format('x'));
-										activity.drops = !!drops.items ? drops.items.filter((d, i) => {
-											const isActivityDrop = d.timestamp > activity.startTime && d.timestamp < activity.endTime;
-											if (isActivityDrop) {
-												drops.items.splice(i, 1);
-											}
-											return isActivityDrop;
-										}) : null;
-										if (activity.trackPoints.length) {
-											activity.trackPoints = activity.trackPoints.map(p => {
-												p.time = Number(moment(p.time).format('x'));
-												return p;
+						[stories] = docs.filter(o => !!o._id).map(story => story.items.filter(item => item.type === 'rain.storyline'));
+	
+						if (stories.length) {
+							msg = `storyline found on ${moment(fromTs).format('YYYYMMDD')}`;
+							stories = stories.map(story => {
+								
+								let segments = story.content.segments;
+								if (!!segments) {
+									segments = segments.map(segment => {
+										if (!!segment.activities) {
+											segment.activities = segment.activities.map(activity => {
+			
+												activity.startTime = activity.timestamp = Number(moment(activity.startTime).format('x'));
+												activity.endTime = Number(moment(activity.endTime).format('x'));
+												activity.drops = !!drops.items ? drops.items.filter((d, i) => {
+													const isActivityDrop = d.timestamp > activity.startTime && d.timestamp < activity.endTime;
+													if (isActivityDrop) {
+														drops.items.splice(i, 1);
+													}
+													return isActivityDrop;
+												}) : null;
+												if (activity.trackPoints.length) {
+													activity.trackPoints = activity.trackPoints.map(p => {
+														p.time = Number(moment(p.time).format('x'));
+														return p;
+													});
+												}
+												return activity;
+			
 											});
 										}
-										return activity;
-	
+		
+										segment.startTime = segment.timestamp = Number(moment(segment.startTime).format('x'));
+										segment.endTime = Number(moment(segment.endTime).format('x'));
+		
+										if (segment.type === 'place') {
+											const placeDrops = drops.items.filter(item => item.timestamp > segment.startTime && item.timestamp < segment.endTime)
+											segment.place.drops = drops.items.length ? drops.items : null;
+										}
+		
+										return segment;
 									});
 								}
-
-								segment.startTime = segment.timestamp = Number(moment(segment.startTime).format('x'));
-								segment.endTime = Number(moment(segment.endTime).format('x'));
-
-								if (segment.type === 'place') {
-									const placeDrops = drops.items.filter(item => item.timestamp > segment.startTime && item.timestamp < segment.endTime)
-									segment.place.drops = drops.items.length ? drops.items : null;
-								}
-
-								return segment;
+								return story;
 							});
+							
+							if (!stories[0].content.summary) {
+								msg += `, but is still in progress (incomplete)`;
+								stories = drops.items;
+							}
+							
+						} else {
+							msg = `no storylines found on ${moment(fromTs).format('YYYYMMDD')}`;
+							stories = drops.items;
 						}
-						return story;
+					}
+
+					stats = spaces.map(s => {
+						const dropCnt = drops.items.filter(d => d.space === s);
+						return {space: s, count: dropCnt.length};
 					});
 
-					cb(stories);
+					cb({msg, stats, items: stories});
+
 				});
 
 			});

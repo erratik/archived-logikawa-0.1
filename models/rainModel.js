@@ -29,7 +29,7 @@ var RainSchema = {
 
         findAllRain: function (params, cb) {
 
-            const query = !!params.spaces && params.spaces[0].length ? { space: { $in: params.spaces } } : {};
+            const query = !!params.spaces && params.spaces.length ? { space: { $in: params.spaces } } : {};
 
             this.find(query, (err, docs) => {
                 if (err) {
