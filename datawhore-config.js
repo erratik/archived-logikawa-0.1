@@ -15,7 +15,7 @@ const config = {
           client: 4200
         },
         url: {
-          api: 'http://logikwaka.heroku.com',
+          api: 'http://logikawa.heroku.com',
           client: 'http://datawhore.erratik.ca'
         }
       }
