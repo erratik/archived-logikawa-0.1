@@ -356,8 +356,18 @@ const DropSchema = {
 										segment.endTime = Number(moment(segment.endTime).format('x'));
 		
 										if (segment.type === 'place') {
-											const placeDrops = drops.items.filter(item => item.timestamp > segment.startTime && item.timestamp < segment.endTime)
+											const placeDrops = drops.items.filter(item => item.timestamp > segment.startTime && item.timestamp < segment.endTime);
 											segment.place.drops = drops.items.length ? drops.items : null;
+
+											// if this is a place, let's put the activities that need to be in it
+											const placeActivites = segment.activities.filter(item => item.timestamp > segment.startTime && item.timestamp < segment.endTime);
+											if (!!placeActivites) {
+
+												segment.place.activities =  placeActivites;
+												delete segment.activities;
+											}
+											
+
 										}
 		
 										return segment;
@@ -381,10 +391,10 @@ const DropSchema = {
 					}
 
 					// MAKE STATS
-					stats = spaces.map(s => {
+					stats = !!spaces ? spaces.map(s => {
 						const dropCnt = drops.items.filter(d => d.space === s);
 						return {space: s, count: dropCnt.length};
-					});
+					}) : null;
 
 					cb({msg, status, stats, items: stories});
 
